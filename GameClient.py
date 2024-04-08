@@ -184,14 +184,14 @@ dispatch = {
 
 
 if __name__ == '__main__':
-    load_dotenv(dotenv_path='./credentials.env')
+    load_dotenv(dotenv_path='credentials.env')
     
     broker_address = os.environ.get('BROKER_ADDRESS')
     broker_port = int(os.environ.get('BROKER_PORT'))
     username = os.environ.get('USER_NAME')
     password = os.environ.get('PASSWORD')
 
-    client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="GameClient", userdata=None, protocol=paho.MQTTv5)
+    client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="GameClient2", userdata=None, protocol=paho.MQTTv5)
     
     # enable TLS for secure connection
     client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
@@ -213,5 +213,6 @@ if __name__ == '__main__':
     client.subscribe("new_game")
     client.subscribe('games/+/start')
     client.subscribe('games/+/+/move')
+
 
     client.loop_forever()

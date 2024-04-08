@@ -6,6 +6,15 @@ import paho.mqtt.client as paho
 from paho import mqtt
 import time
 
+from enum import Enum
+
+
+class Moveset(Enum):
+    UP = (-1, 0)
+    DOWN = (1, 0)
+    LEFT = (0, -1)
+    RIGHT = (0, 1)
+
 
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -54,11 +63,24 @@ def on_message(client, userdata, msg):
         :param msg: the message with topic and payload
     """
 
+    if msg.topic == "games/TestLobby/Player1/game_state":
+        follow_up_question = input("What would you like to do next? (UP/DOWN/LEFT/RIGHT) ")
+        follow_up_question = follow_up_question.upper()
+        try:
+            # Attempt to convert the input string to a Moveset value
+            move = Moveset[follow_up_question]
+            # If successful, publish the move
+            client.publish(f"games/{lobby_name}/{player_1}/move", follow_up_question)
+        except KeyError:
+            # If the input does not match any Moveset value, notify the user
+            print("Invalid move. Please enter UP, DOWN, LEFT, or RIGHT.")
+
+
     print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
 
 
 if __name__ == '__main__':
-    load_dotenv(dotenv_path='./credentials.env')
+    load_dotenv(dotenv_path='credentials.env')
     
     broker_address = os.environ.get('BROKER_ADDRESS')
     broker_port = int(os.environ.get('BROKER_PORT'))
@@ -81,8 +103,8 @@ if __name__ == '__main__':
 
     lobby_name = "TestLobby"
     player_1 = "Player1"
-    player_2 = "Player2"
-    player_3 = "Player3"
+    # player_2 = "Player2"
+    # player_3 = "Player3"
 
     client.subscribe(f"games/{lobby_name}/lobby")
     client.subscribe(f'games/{lobby_name}/+/game_state')
@@ -92,20 +114,20 @@ if __name__ == '__main__':
                                             'team_name':'ATeam',
                                             'player_name' : player_1}))
     
-    client.publish("new_game", json.dumps({'lobby_name':lobby_name,
-                                            'team_name':'BTeam',
-                                            'player_name' : player_2}))
-    
-    client.publish("new_game", json.dumps({'lobby_name':lobby_name,
-                                        'team_name':'BTeam',
-                                        'player_name' : player_3}))
+    # client.publish("new_game", json.dumps({'lobby_name':lobby_name,
+    #                                         'team_name':'BTeam',
+    #                                         'player_name' : player_2}))
+    #
+    # client.publish("new_game", json.dumps({'lobby_name':lobby_name,
+    #                                     'team_name':'BTeam',
+    #                                     'player_name' : player_3}))
 
     time.sleep(1) # Wait a second to resolve game start
     client.publish(f"games/{lobby_name}/start", "START")
-    client.publish(f"games/{lobby_name}/{player_1}/move", "UP")
-    client.publish(f"games/{lobby_name}/{player_2}/move", "DOWN")
-    client.publish(f"games/{lobby_name}/{player_3}/move", "DOWN")
-    client.publish(f"games/{lobby_name}/start", "STOP")
+    # client.publish(f"games/{lobby_name}/{player_1}/move", "UP")
+    # client.publish(f"games/{lobby_name}/{player_2}/move", "DOWN")
+    # client.publish(f"games/{lobby_name}/{player_3}/move", "DOWN")
+    # client.publish(f"games/{lobby_name}/start", "STOP")
 
 
     client.loop_forever()
