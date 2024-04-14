@@ -63,20 +63,91 @@ def on_message(client, userdata, msg):
         :param msg: the message with topic and payload
     """
 
-    if msg.topic == "games/TestLobby/Player1/game_state":
-        follow_up_question = input("What would you like to do next? (UP/DOWN/LEFT/RIGHT) ")
-        follow_up_question = follow_up_question.upper()
-        try:
-            # Attempt to convert the input string to a Moveset value
-            move = Moveset[follow_up_question]
-            # If successful, publish the move
-            client.publish(f"games/{lobby_name}/{player_1}/move", follow_up_question)
-        except KeyError:
-            # If the input does not match any Moveset value, notify the user
-            print("Invalid move. Please enter UP, DOWN, LEFT, or RIGHT.")
+    try:
+        print(f"Received message on {msg.topic} with QoS {msg.qos}")
+
+        # Decode the message payload using explicit UTF-8 encoding
+        game_state = json.loads(msg.payload.decode('utf-8'))
+        print("Game State Decoded:", game_state)
+
+        player_position = tuple(game_state["currentPosition"])
+        coins = [tuple(game_state[coin]) for coin in ["coin1", "coin2", "coin3"] if game_state[coin]]
+        walls = [tuple(wall) for wall in game_state["walls"]]
+
+        print("Player Position:", player_position)
+        print("Coins:", coins)
+        print("Walls:", walls)
+
+        # Decide the next move based on the current game state
+        next_move = decide_next_move(player_position, coins, walls)
+        print("Decided Move:", next_move)
+
+        # Ensure the next_move is a string, as MQTT expects the payload to be a string or bytes
+        if next_move:
+            client.publish(f"games/{lobby_name}/{player_1}/move", next_move)
+        else:
+            print("No valid move was calculated.")
+
+    except Exception as e:
+        print(f"An error occurred while processing the message: {e}")
+
+    print("End of message processing.")
+
+    # Make sure to set up your MQTT client with the correct callbacks
+    client = mqtt.Client()
+    client.on_message = on_message
+    client.connect("mqtt_broker_address", 1883, 60)  # Update with your MQTT broker's address and port
+    client.subscribe("games/TestLobby/Player1/game_state", qos=1)
+    client.loop_forever()  # Start the network loop
 
 
-    print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+def calculate_distance(start, end):
+    # Using Manhattan distance for grid movement
+    return abs(start[0] - end[0]) + abs(start[1] - end[1])
+
+def is_path_blocked(start, end, walls):
+    # Check if there's a straight line path to the coin without walls blocking
+    # This function assumes walls are a list of tuples (x, y)
+    if start[0] == end[0]:  # same row
+        for y in range(min(start[1], end[1]) + 1, max(start[1], end[1])):
+            if (start[0], y) in walls:
+                return True
+    elif start[1] == end[1]:  # same column
+        for x in range(min(start[0], end[0]) + 1, max(start[0], end[0])):
+            if (x, start[1]) in walls:
+                return True
+    return False
+
+def get_direction(start, goal):
+    # Determine the simple step direction to move towards the goal
+    if goal[0] > start[0]:
+        return "RIGHT"
+    elif goal[0] < start[0]:
+        return "LEFT"
+    elif goal[1] > start[1]:
+        return "DOWN"
+    elif goal[1] < start[1]:
+        return "UP"
+
+def decide_next_move(player_position, coins, walls):
+    # Move towards the nearest accessible coin
+    best_coin = None
+    min_distance = float('inf')
+
+    for coin in coins:
+        if not is_path_blocked(player_position, coin, walls):
+            distance = calculate_distance(player_position, coin)
+            if distance < min_distance:
+                min_distance = distance
+                best_coin = coin
+
+    if best_coin:
+        # Determine the direction to move towards the best coin
+        return get_direction(player_position, best_coin)
+
+    # If no accessible coin, move towards the middle of the grid
+    grid_center = [5, 5]  # Example center for a 10x10 grid
+    return get_direction(player_position, grid_center)
 
 
 if __name__ == '__main__':
