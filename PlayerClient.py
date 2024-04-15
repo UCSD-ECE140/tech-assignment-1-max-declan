@@ -57,31 +57,25 @@ def on_subscribe(client, userdata, mid, granted_qos, properties=None):
 # print message, useful for checking if it was successful
 def on_message(client, userdata, msg):
     """
-    Prints a MQTT message to stdout (used as a callback for subscribe).
-    :param client: the client itself
-    :param userdata: userdata is set when initiating the client, here it is userdata=None
-    :param msg: the message with topic and payload
+        Prints a mqtt message to stdout ( used as callback for subscribe )
+        :param client: the client itself
+        :param userdata: userdata is set when initiating the client, here it is userdata=None
+        :param msg: the message with topic and payload
     """
+
     if msg.topic == "games/TestLobby/Player1/game_state":
-        # Decode the message payload from bytes to string using UTF-8 and load into JSON
-        game_state = json.loads(msg.payload.decode('utf-8'))
-        print("Game State Decoded Successfully")
+        follow_up_question = input("What would you like to do next? (UP/DOWN/LEFT/RIGHT) ")
+        follow_up_question = follow_up_question.upper()
+        try:
+            # Attempt to convert the input string to a Moveset value
+            move = Moveset[follow_up_question]
+            # If successful, publish the move
+            client.publish(f"games/{lobby_name}/{player_1}/move", follow_up_question)
+        except KeyError:
+            # If the input does not match any Moveset value, notify the user
+            print("Invalid move. Please enter UP, DOWN, LEFT, or RIGHT.")
 
-        # Print detailed game state information
-        print("Current Player Position:", game_state["currentPosition"])
-        print("Teammate Names:", game_state.get("teammateNames", []))
-        print("Teammate Positions:", game_state.get("teammatePositions", []))
-        print("Enemy Positions:", game_state.get("enemyPositions", []))
-        print("Coins Positions:",
-              [game_state.get(f"coin{i + 1}", []) for i in range(3) if game_state.get(f"coin{i + 1}", [])])
-        print("Walls Positions:", game_state.get("walls", []))
-
-        # Automatically move UP
-        next_move = "UP"
-        client.publish(f"games/{lobby_name}/{player_1}/move", next_move)
-        print(f"Automatically moved UP.")
-
-        print("End of message processing.")
+    print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
 
 
 if __name__ == '__main__':
