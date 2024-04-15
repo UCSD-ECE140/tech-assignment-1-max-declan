@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 import time
-import random
+
 
 import paho.mqtt.client as paho
 from paho import mqtt
@@ -82,61 +82,28 @@ def on_message(client, userdata, msg):
 # using MQTT version 5 here, for 3.1.1: MQTTv311, 3.1: MQTTv31
 # userdata is user defined data of any type, updated by user_data_set()
 # client_id is the given name of the client
-client1 = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="", userdata=None, protocol=paho.MQTTv5)
-client1.on_connect = on_connect
-
-client2 = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="", userdata=None, protocol=paho.MQTTv5)
-client2.on_connect = on_connect
 
 client3 = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="", userdata=None, protocol=paho.MQTTv5)
 client3.on_connect = on_connect
 
 
 # enable TLS for secure connection
-client1.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
+client3.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
 # set username and password
-client1.username_pw_set("client1", "Password1")
+client3.username_pw_set("ECE140@UCSD", "Password1")
 # connect to HiveMQ Cloud on port 8883 (default for MQTT)
-client1.connect("777630be8b4a40a182440428578a0533.s1.eu.hivemq.cloud", 8883)
+client3.connect("777630be8b4a40a182440428578a0533.s1.eu.hivemq.cloud", 8883)
 
-# enable TLS for secure connection
-client2.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
-# set username and password
-client2.username_pw_set("client2", "Password1")
-# connect to HiveMQ Cloud on port 8883 (default for MQTT)
-client2.connect("777630be8b4a40a182440428578a0533.s1.eu.hivemq.cloud", 8883)
+
 
 # setting callbacks, use separate functions like above for better visibility
-client1.on_subscribe = on_subscribe
-client1.on_message = on_message
-client1.on_publish = on_publish
-
-# setting callbacks, use separate functions like above for better visibility
-client2.on_subscribe = on_subscribe
-client2.on_message = on_message
-client2.on_publish = on_publish
+client3.on_subscribe = on_subscribe
+client3.on_message = on_message
+client3.on_publish = on_publish
 
 # subscribe to all topics of encyclopedia by using the wildcard "#"
-client1.subscribe("encyclopedia/#", qos=1)
-client2.subscribe("encyclopedia/#", qos=1)
-
-# try:
-#     while True:
-#         # a single publish, this can also be done in loops, etc.
-#         client1.publish("encyclopedia/temperature", payload="hot", qos=1)
-#         client2.publish("encyclopedia/temperature", payload="hot", qos=1)
-#         time.sleep(3)
-# except KeyboardInterrupt:
-#     print("Program stopped by user.")
-
-for i in range(10):
-    num = random.randint(0,100)
-    # a single publish, this can also be done in loops, etc.
-    client1.publish("encyclopedia/temperature", payload= num, qos=1)
-    client2.publish("encyclopedia/temperature", payload=num+1, qos=1)
-    time.sleep(3)
-
+client3.subscribe("encyclopedia/#", qos=1)
 
 # loop_forever for simplicity, here you need to stop the loop manually
 # you can also use loop_start and loop_stop
-#client1.loop_forever()
+client3.loop_forever()

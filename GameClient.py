@@ -65,7 +65,6 @@ def on_message(client, userdata, msg):
         dispatch[topic_list[-1]](client, topic_list, msg.payload)
 
 
-
 # Dispatched function, adds player to a lobby & team
 def add_player(client, topic_list, msg_payload):
     # Parse and Validate Input Data
